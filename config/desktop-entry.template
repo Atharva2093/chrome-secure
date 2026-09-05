@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Google Chrome
+Comment=Google Chrome with Chrome Secure authentication
+Exec=/home/USERNAME/.local/bin/chrome-secure %U
+Terminal=false
+Icon=com.google.Chrome
+Categories=Network;WebBrowser;
+MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
+StartupWMClass=Google-chrome

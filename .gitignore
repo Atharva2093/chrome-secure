@@ -1,0 +1,23 @@
+# Local Chrome data
+chrome-lock-profiles/
+google-chrome/
+google-chrome-backup/
+google-chrome-before-lock/
+
+# Local authentication data
+*.hash
+
+# Local configuration
+.env
+.env.*
+
+# Backups
+*.backup
+*.bak
+backup/
+backups/
+
+# OS/editor files
+.DS_Store
+*.swp
+*~
