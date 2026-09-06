@@ -394,45 +394,6 @@ Contains procedures for common problems such as:
 
 ---
 
-## 🔐 Keep Private Data Out of Git
-
-This repository is intended to contain **source code and sanitized documentation only**.
-
-Never commit:
-
-```text
-Password hashes
-Chrome profile directories
-Cookies
-Active browser sessions
-Browser history
-Private bookmarks
-Chrome backups
-API keys
-Access tokens
-Private keys
-Personal configuration
-User-specific filesystem paths
-```
-
-The repository's `.gitignore` is configured to help prevent common sensitive files from being committed.
-
-Before pushing changes, always check what Git is tracking:
-
-```bash
-git status
-```
-
-You can also check for accidentally included hash files:
-
-```bash
-find . -type f -name "*.hash"
-```
-
-The command should normally return no results.
-
----
-
 ## 🧪 Project Status
 
 Chrome Secure is a personal/open-source project focused on experimenting with additional authentication and profile isolation for Google Chrome on Linux.
