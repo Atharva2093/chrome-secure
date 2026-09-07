@@ -64,18 +64,8 @@ if [ ! -d "$BASE" ]; then
 fi
 
 # ------------------------------------------------------------
-# Prevent multiple Chrome environments
 # ------------------------------------------------------------
 
-if pgrep -x chrome >/dev/null 2>&1 ||
-   pgrep -x google-chrome >/dev/null 2>&1; then
-
-    zenity --error \
-        --title="Chrome Already Running" \
-        --text="Please close all Chrome windows before opening a locked profile."
-
-    exit 1
-fi
 
 # ------------------------------------------------------------
 # Stage 1: Master password
