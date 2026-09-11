@@ -12,6 +12,10 @@ CONFIG="$HOME/.config/chrome-lock"
 
 MASTER_HASH="$CONFIG/password.hash"
 
+# Arguments received from the desktop entry, such as URLs opened
+# from PDFs, file managers, or other applications.
+CHROME_EXTRA_ARGS=("$@")
+
 declare -A PROFILE_DIR
 declare -A PROFILE_HASH
 
@@ -46,6 +50,53 @@ PROFILE_HASH["Profile 11"]="profile-11.hash"
 PROFILE_HASH["Profile 12"]="profile-12.hash"
 
 # ------------------------------------------------------------
+# Detect already-running isolated Chrome profiles
+# ------------------------------------------------------------
+
+RUNNING_PROFILES=()
+
+while IFS= read -r CMDLINE; do
+    for PROFILE_NAME in "${!PROFILE_DIR[@]}"; do
+        RUNNING_DIR="$BASE/${PROFILE_DIR[$PROFILE_NAME]}"
+
+        if [[ "$CMDLINE" == *"--user-data-dir=$RUNNING_DIR"* ]]; then
+            RUNNING_PROFILES+=("$PROFILE_NAME")
+            break
+        fi
+    done
+done < <(ps -eo args= 2>/dev/null)
+
+# Remove duplicates.
+if [ "${#RUNNING_PROFILES[@]}" -gt 1 ]; then
+    mapfile -t RUNNING_PROFILES < <(
+        printf '%s\n' "${RUNNING_PROFILES[@]}" | sort -u
+    )
+fi
+
+# ------------------------------------------------------------
+# Handle external URLs/actions for an already-unlocked profile
+# ------------------------------------------------------------
+
+if [ "${#CHROME_EXTRA_ARGS[@]}" -gt 0 ] &&
+   [ "${#RUNNING_PROFILES[@]}" -gt 0 ]; then
+
+    if [ "${#RUNNING_PROFILES[@]}" -eq 1 ]; then
+        PROFILE="${RUNNING_PROFILES[0]}"
+    else
+        if ! PROFILE=$(zenity --list             --title="Chrome Profiles"             --text="Select the already-open Chrome profile:"             --column="Profile"             "${RUNNING_PROFILES[@]}"             --height=400             --width=450             --print-column=1); then
+            exit 1
+        fi
+
+        [ -z "$PROFILE" ] && exit 1
+    fi
+
+    DIR_NAME="${PROFILE_DIR[$PROFILE]}"
+    PROFILE_DIR_PATH="$BASE/$DIR_NAME"
+
+    exec flatpak run com.google.Chrome         --user-data-dir="$PROFILE_DIR_PATH"         --no-first-run         "${CHROME_EXTRA_ARGS[@]}"
+fi
+
+# ------------------------------------------------------------
 # Validate configuration
 # ------------------------------------------------------------
 
@@ -71,15 +122,12 @@ fi
 # Stage 1: Master password
 # ------------------------------------------------------------
 
-MASTER_PASSWORD=$(zenity --password \
+if ! MASTER_PASSWORD=$(zenity --password \
     --title="Chrome Locked" \
-    --text="Enter Chrome master password:")
-
-if [ $? -ne 0 ]; then
+    --text="Enter Chrome master password:"); then
     unset MASTER_PASSWORD
     exit 1
 fi
-
 SALT=$(cut -d'$' -f3 "$MASTER_HASH")
 
 if ! printf '%s\n' "$MASTER_PASSWORD" |
@@ -101,7 +149,7 @@ unset MASTER_PASSWORD
 # Stage 2: Select profile
 # ------------------------------------------------------------
 
-PROFILE=$(zenity --list \
+if ! PROFILE=$(zenity --list \
     --title="Chrome Profiles" \
     --text="Select the Chrome profile you want to open:" \
     --column="Profile" \
@@ -119,12 +167,9 @@ PROFILE=$(zenity --list \
     "Profile 12" \
     --height=500 \
     --width=450 \
-    --print-column=1)
-
-if [ $? -ne 0 ] || [ -z "$PROFILE" ]; then
+    --print-column=1) || [ -z "$PROFILE" ]; then
     exit 1
 fi
-
 DIR_NAME="${PROFILE_DIR[$PROFILE]}"
 HASH_NAME="${PROFILE_HASH[$PROFILE]}"
 
@@ -153,11 +198,9 @@ fi
 # Stage 3: Profile password
 # ------------------------------------------------------------
 
-PROFILE_PASSWORD=$(zenity --password \
+if ! PROFILE_PASSWORD=$(zenity --password \
     --title="$PROFILE" \
-    --text="Enter password for $PROFILE:")
-
-if [ $? -ne 0 ]; then
+    --text="Enter password for $PROFILE:"); then
     unset PROFILE_PASSWORD
     exit 1
 fi
@@ -185,4 +228,5 @@ unset PROFILE_PASSWORD
 
 exec flatpak run com.google.Chrome \
     --user-data-dir="$PROFILE_DIR_PATH" \
-    --no-first-run
+    --no-first-run \
+    "${CHROME_EXTRA_ARGS[@]}"
